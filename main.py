@@ -1,6 +1,7 @@
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
 from db.queries import create_tables
+
 from handlers.start import start, courses_command
 from handlers.buttons import button_click
 from handlers.admin import (
@@ -16,18 +17,30 @@ from handlers.admin import (
 
 from config import TOKEN
 
+# -------- KEEP ALIVE SERVER --------
+from flask import Flask
+import threading
+import os
 
+web_app = Flask(__name__)
+
+@web_app.route("/")
+def home():
+    return "Bot is alive"
+
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    web_app.run(host="0.0.0.0", port=port)
+
+
+# -------- MAIN BOT --------
 def main():
-    # ✅ 1. Create DB first
     create_tables()
 
-    # ✅ 2. Create app
     app = Application.builder().token(TOKEN).build()
 
-    # ✅ 3. Start auto backup AFTER app exists
-    app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
-
-    # ✅ 4. Commands
+    # -------- COMMANDS --------
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("course", courses_command))
     app.add_handler(CommandHandler("add_course", add_course))
@@ -37,11 +50,18 @@ def main():
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
 
-    # ✅ 5. Buttons
+    # -------- BUTTONS --------
     app.add_handler(CallbackQueryHandler(button_click))
 
-    # ✅ 6. Messages (state system)
+    # -------- MESSAGES --------
     app.add_handler(MessageHandler(filters.ALL, handle_admin_messages))
+
+    # -------- AUTO BACKUP --------
+    if app.job_queue:
+        app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
+
+    # -------- START WEB SERVER THREAD --------
+    threading.Thread(target=run_web).start()
 
     print("Bot running...")
     app.run_polling()
