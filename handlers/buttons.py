@@ -63,7 +63,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         notes = get_notes_by_category(category)
 
         await query.edit_message_text(
-            f"𝙉𝙤𝙩𝙚𝙨 𝙛𝙤𝙧 **{category}**:",
+            f"𝙉𝙤𝙩𝙚𝙨 𝙛𝙤𝙧 {category}:",
             reply_markup=get_notes_keyboard(notes, user_id)
         )
 
