@@ -1,81 +1,55 @@
-from telegram import Update
-from telegram.ext import ContextTypes
+# -------- MANUAL BACKUP --------
+async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != ADMIN_ID:
+        return
 
-from keyboards.courses import get_courses_keyboard
-from keyboards.notes import get_notes_keyboard
+    # Use the filename actually present in your directory
+    db_path = "bot.db" 
+    if not os.path.exists(db_path):
+        await update.message.reply_text("DB not found")
+        return
 
-from db.queries import get_notes_by_category, get_note_by_id, delete_note
-from config import ADMIN_ID
+    # 1. Find and delete the previous pinned backup to keep chat clean
+    try:
+        chat = await context.bot.get_chat(ADMIN_ID)
+        if chat.pinned_message:
+            await context.bot.delete_message(ADMIN_ID, chat.pinned_message.message_id)
+    except:
+        pass
 
-
-async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    data = query.data
-    user_id = update.effective_user.id
-
-    # MENU
-    if data == "show_courses":
-        await query.edit_message_text("Choose a category:", reply_markup=get_courses_keyboard())
-
-    elif data == "feedback":
-        context.user_data["state"] = "REPORT"
-        await query.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙧𝙚𝙥𝙤𝙧𝙩:")
-
-    # CATEGORY
-    elif data.startswith("course_"):
-        category = data.split("_", 1)[1]
-
-        # ADMIN ADD NOTE FLOW
-        if user_id == ADMIN_ID and context.user_data.get("state") == "WAITING_COURSE":
-            context.user_data["category"] = category
-            context.user_data["state"] = "WAITING_TITLE"
-            await query.edit_message_text(f"** {category}** selected.\nSend title:")
-            return
-
-        context.user_data["category"] = category
-        notes = get_notes_by_category(category)
-
-        await query.edit_message_text(
-            f"Notes for {category}:",
-            reply_markup=get_notes_keyboard(notes, user_id)
+    # 2. Send new backup
+    with open(db_path, "rb") as f:
+        msg = await context.bot.send_document(
+            chat_id=ADMIN_ID,
+            document=f,
+            filename="database.db" # Standardized name for easy restore
         )
 
-    # OPEN NOTE
-    elif data.startswith("note_"):
-        note_id = int(data.split("_")[1])
-        note = get_note_by_id(note_id)
+    # 3. Pin it so main.py can find it after a restart
+    await context.bot.pin_chat_message(ADMIN_ID, msg.message_id)
+    await update.message.reply_text("Backup pinned and synced.")
 
-        if note:
-            title, file_id = note
-            await context.bot.send_document(update.effective_chat.id, file_id, caption=title)
 
-    # DELETE
-    elif data.startswith("delete_"):
-        if user_id != ADMIN_ID:
-            return
+# -------- AUTO BACKUP (EVERY 2 HOURS) --------
+async def auto_backup(context: ContextTypes.DEFAULT_TYPE):
+    db_path = "bot.db"
+    if not os.path.exists(db_path):
+        return
 
-        note_id = int(data.split("_")[1])
-        delete_note(note_id)
+    # 1. Clean up old pinned message
+    try:
+        chat = await context.bot.get_chat(ADMIN_ID)
+        if chat.pinned_message:
+            await context.bot.delete_message(ADMIN_ID, chat.pinned_message.message_id)
+    except:
+        pass
 
-        category = context.user_data.get("category")
-        notes = get_notes_by_category(category)
-
-        await query.edit_message_text(
-            f"𝙉𝙤𝙩𝙚𝙨 𝙛𝙤𝙧 {category}:",
-            reply_markup=get_notes_keyboard(notes, user_id)
+    # 2. Send and Pin new backup
+    with open(db_path, "rb") as f:
+        msg = await context.bot.send_document(
+            chat_id=ADMIN_ID,
+            document=f,
+            filename="database.db"
         )
-
-    # EDIT
-    elif data.startswith("edit_"):
-        if user_id != ADMIN_ID:
-            return
-
-        context.user_data["edit_note_id"] = int(data.split("_")[1])
-        context.user_data["state"] = "EDIT_TITLE"
-        await query.message.reply_text("Send new title:")
-
-    # BACK
-    elif data == "back_courses":
-        await query.edit_message_text("𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:", reply_markup=get_courses_keyboard())
+    
+    await context.bot.pin_chat_message(ADMIN_ID, msg.message_id)
