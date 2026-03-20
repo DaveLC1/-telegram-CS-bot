@@ -8,14 +8,9 @@ from db.queries import create_tables
 from handlers.start import start, courses_command
 from handlers.buttons import button_click
 from handlers.admin import (
-    add_course,
-    add_note_start,
-    handle_admin_messages,
-    cancel,
-    send_notification,
-    reply_to_report,
-    backup_db,
-    auto_backup
+    add_course, add_note_start, handle_admin_messages,
+    cancel, send_notification, reply_to_report,
+    backup_db, auto_backup
 )
 from config import TOKEN, ADMIN_ID
 
@@ -30,33 +25,38 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# -------- DATABASE SYNC (RESTORE & DELETE) --------
-async def sync_db(bot):
-    try:
-        chat = await bot.get_chat(ADMIN_ID)
-        pinned = chat.pinned_message
-        # Matches the filename 'bot_backup.db' from your admin.py
-        if pinned and pinned.document:
-            file = await bot.get_file(pinned.document.file_id)
-            await file.download_to_drive("bot.db")
-            # Delete the old pinned message so the chat stays clean
-            await bot.delete_message(ADMIN_ID, pinned.message_id)
-            print("Database restored and old pin deleted.")
-    except Exception as e:
-        print(f"Sync skipped: {e}")
+# -------- THE FIX: PROPER ASYNC RESTORE --------
+async def restore_and_run(app):
+    # This block 'wakes up' the bot so we can use app.bot
+    async with app:
+        try:
+            chat = await app.bot.get_chat(ADMIN_ID)
+            pinned = chat.pinned_message
+            if pinned and pinned.document:
+                print("Found backup! Restoring...")
+                file = await app.bot.get_file(pinned.document.file_id)
+                # Ensure this filename matches what you use in your queries
+                await file.download_to_drive("bot.db")
+                await app.bot.delete_message(ADMIN_ID, pinned.message_id)
+                print("Restore complete.")
+        except Exception as e:
+            print(f"Sync skipped/failed: {e}")
+        
+        # Now that we've restored (or skipped), start the bot
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling()
+        
+        # Keep it running
+        while True:
+            await asyncio.sleep(3600)
 
-# -------- MAIN BOT --------
 def main():
-    # 1. Create tables if they don't exist
     create_tables()
 
     app = Application.builder().token(TOKEN).build()
 
-    # 2. Run the Restore/Delete logic before starting
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(sync_db(app.bot))
-
-    # -------- COMMANDS --------
+    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("course", courses_command))
     app.add_handler(CommandHandler("add_course", add_course))
@@ -65,22 +65,18 @@ def main():
     app.add_handler(CommandHandler("noti", send_notification))
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
-
-    # -------- BUTTONS --------
     app.add_handler(CallbackQueryHandler(button_click))
-
-    # -------- MESSAGES --------
     app.add_handler(MessageHandler(filters.ALL, handle_admin_messages))
 
-    # -------- AUTO BACKUP --------
     if app.job_queue:
         app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
 
-    # -------- START WEB SERVER THREAD --------
+    # Web Server Thread
     threading.Thread(target=run_web, daemon=True).start()
 
-    print("Bot running...")
-    app.run_polling()
+    print("Starting restoration and polling...")
+    # Use asyncio to run the restoration AND the bot logic
+    asyncio.run(restore_and_run(app))
 
 if __name__ == "__main__":
     main()
