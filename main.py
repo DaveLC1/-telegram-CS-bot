@@ -6,8 +6,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 from db.queries import create_tables
 from handlers.start import start, courses_command
-
-# FIXED: Import the whole module to prevent "cannot import name" errors
+# Universal import to prevent crash
 import handlers.buttons as btn_handlers 
 
 from handlers.admin import (
@@ -36,7 +35,7 @@ async def post_init(application: Application):
         if pinned and pinned.document:
             print("Restoring database...")
             file = await application.bot.get_file(pinned.document.file_id)
-            # This must match the file used in your db/queries.py
+            # This MUST match the DB filename in your queries.py
             await file.download_to_drive("bot.db") 
             await application.bot.delete_message(ADMIN_ID, pinned.message_id)
             print("Sync complete.")
@@ -59,8 +58,8 @@ def main():
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
 
-    # BUTTONS - Change 'handle_buttons' to 'button_click' if that is what's in your file
-    app.add_handler(CallbackQueryHandler(btn_handlers.handle_buttons))
+    # BUTTONS - FIXED: Changed handle_buttons to button_click
+    app.add_handler(CallbackQueryHandler(btn_handlers.button_click))
 
     # MESSAGES
     app.add_handler(MessageHandler(filters.ALL, handle_admin_messages))
