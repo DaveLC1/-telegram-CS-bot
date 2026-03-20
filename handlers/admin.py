@@ -177,7 +177,7 @@ async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TY
             ADMIN_ID,
             f"𝙍𝙚𝙥𝙤𝙧𝙩 #{report_id}\n{update.message.text}\n/reply {report_id}"
         )
-        await update.message.reply_text("Sent𓅯")
+        await update.message.reply_text("𝙎𝙚𝙣𝙩 𓅯")
         context.user_data.clear()
         return
 
@@ -233,5 +233,5 @@ async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TY
                     await context.bot.send_document(u, update.message.document.file_id)
             except:
                 pass
-        await update.message.reply_text("Broadcast sent")
+        await update.message.reply_text("𝘽𝙧𝙤𝙖𝙙𝙘𝙖𝙨𝙩 𝙨𝙚𝙣𝙩 𓅃")
         context.user_data.clear()

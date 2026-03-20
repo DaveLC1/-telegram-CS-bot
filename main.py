@@ -16,7 +16,7 @@ from handlers.admin import (
     auto_backup,
     restore_db_from_chat
 )
-from config import TOKEN, ADMIN_ID
+from config import TOKEN
 
 # -------- KEEP ALIVE SERVER --------
 from flask import Flask
@@ -31,16 +31,21 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port, use_reloader=False)
 
+
 # -------- MAIN BOT --------
 def main():
-    create_tables()  # ensure DB exists if not restored
     app = Application.builder().token(TOKEN).build()
 
-    # Restore DB from pinned backup at startup
+    # -------- STARTUP --------
     async def startup(app):
-        print("⏳ Restoring DB from pinned backup (if exists)...")
+        print(" Restoring DB from pinned backup (if exists)...")
+
+        # ����RESTORE FIRST
         await restore_db_from_chat(app)
+
+        # THEN create tables if needed
         create_tables()
+
         print("✅ Database ready")
 
     app.post_init = startup
@@ -65,11 +70,12 @@ def main():
     if app.job_queue:
         app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
 
-    # -------- START WEB SERVER THREAD --------
+    # -------- START WEB SERVER --------
     threading.Thread(target=run_web, daemon=True).start()
 
     print("Bot running...")
     app.run_polling()
+
 
 if __name__ == "__main__":
     main()
