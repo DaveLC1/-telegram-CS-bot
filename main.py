@@ -6,7 +6,8 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 from db.queries import create_tables
 from handlers.start import start, courses_command
-from handlers.buttons import button_click
+# FIXED IMPORT: Changed button_click to handle_buttons
+from handlers.buttons import handle_buttons 
 from handlers.admin import (
     add_course, add_note_start, handle_admin_messages,
     cancel, send_notification, reply_to_report,
@@ -25,38 +26,27 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# -------- THE FIX: PROPER ASYNC RESTORE --------
-async def restore_and_run(app):
-    # This block 'wakes up' the bot so we can use app.bot
-    async with app:
-        try:
-            chat = await app.bot.get_chat(ADMIN_ID)
-            pinned = chat.pinned_message
-            if pinned and pinned.document:
-                print("Found backup! Restoring...")
-                file = await app.bot.get_file(pinned.document.file_id)
-                # Ensure this filename matches what you use in your queries
-                await file.download_to_drive("bot.db")
-                await app.bot.delete_message(ADMIN_ID, pinned.message_id)
-                print("Restore complete.")
-        except Exception as e:
-            print(f"Sync skipped/failed: {e}")
-        
-        # Now that we've restored (or skipped), start the bot
-        await app.initialize()
-        await app.start()
-        await app.updater.start_polling()
-        
-        # Keep it running
-        while True:
-            await asyncio.sleep(3600)
+# -------- SYNC LOGIC --------
+async def post_init(application: Application):
+    try:
+        chat = await application.bot.get_chat(ADMIN_ID)
+        pinned = chat.pinned_message
+        if pinned and pinned.document:
+            print("Restoring database...")
+            file = await application.bot.get_file(pinned.document.file_id)
+            await file.download_to_drive("bot.db")
+            await application.bot.delete_message(ADMIN_ID, pinned.message_id)
+            print("Sync complete.")
+    except Exception as e:
+        print(f"Sync skipped: {e}")
 
+# -------- MAIN --------
 def main():
     create_tables()
 
-    app = Application.builder().token(TOKEN).build()
+    app = Application.builder().token(TOKEN).post_init(post_init).build()
 
-    # Handlers
+    # COMMANDS
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("course", courses_command))
     app.add_handler(CommandHandler("add_course", add_course))
@@ -65,18 +55,20 @@ def main():
     app.add_handler(CommandHandler("noti", send_notification))
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
-    app.add_handler(CallbackQueryHandler(button_click))
+
+    # BUTTONS - Updated to match the imported function name
+    app.add_handler(CallbackQueryHandler(handle_buttons))
+
+    # MESSAGES
     app.add_handler(MessageHandler(filters.ALL, handle_admin_messages))
 
     if app.job_queue:
         app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
 
-    # Web Server Thread
     threading.Thread(target=run_web, daemon=True).start()
 
-    print("Starting restoration and polling...")
-    # Use asyncio to run the restoration AND the bot logic
-    asyncio.run(restore_and_run(app))
+    print("Bot is starting on Render...")
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
