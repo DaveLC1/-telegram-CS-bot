@@ -6,8 +6,10 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Mess
 
 from db.queries import create_tables
 from handlers.start import start, courses_command
-# FIXED IMPORT: Changed button_click to handle_buttons
-from handlers.buttons import handle_buttons 
+
+# FIXED: Import the whole module to prevent "cannot import name" errors
+import handlers.buttons as btn_handlers 
+
 from handlers.admin import (
     add_course, add_note_start, handle_admin_messages,
     cancel, send_notification, reply_to_report,
@@ -26,7 +28,7 @@ def run_web():
     port = int(os.environ.get("PORT", 10000))
     web_app.run(host="0.0.0.0", port=port)
 
-# -------- SYNC LOGIC --------
+# -------- RESTORE LOGIC --------
 async def post_init(application: Application):
     try:
         chat = await application.bot.get_chat(ADMIN_ID)
@@ -34,7 +36,8 @@ async def post_init(application: Application):
         if pinned and pinned.document:
             print("Restoring database...")
             file = await application.bot.get_file(pinned.document.file_id)
-            await file.download_to_drive("bot.db")
+            # This must match the file used in your db/queries.py
+            await file.download_to_drive("bot.db") 
             await application.bot.delete_message(ADMIN_ID, pinned.message_id)
             print("Sync complete.")
     except Exception as e:
@@ -56,8 +59,8 @@ def main():
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
 
-    # BUTTONS - Updated to match the imported function name
-    app.add_handler(CallbackQueryHandler(handle_buttons))
+    # BUTTONS - Change 'handle_buttons' to 'button_click' if that is what's in your file
+    app.add_handler(CallbackQueryHandler(btn_handlers.handle_buttons))
 
     # MESSAGES
     app.add_handler(MessageHandler(filters.ALL, handle_admin_messages))
@@ -67,7 +70,7 @@ def main():
 
     threading.Thread(target=run_web, daemon=True).start()
 
-    print("Bot is starting on Render...")
+    print("Bot is starting...")
     app.run_polling()
 
 if __name__ == "__main__":
