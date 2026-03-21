@@ -14,7 +14,8 @@ from handlers.admin import (
     reply_to_report,
     backup_db,
     auto_backup,
-    restore_db_from_chat
+    restore_db_from_chat,
+    delete_category_command
 )
 from config import TOKEN
 
@@ -40,7 +41,7 @@ def main():
     async def startup(app):
         print(" Restoring DB from pinned backup (if exists)...")
 
-        # ����RESTORE FIRST
+        # ? RESTORE FIRST
         await restore_db_from_chat(app)
 
         # THEN create tables if needed
@@ -59,6 +60,7 @@ def main():
     app.add_handler(CommandHandler("noti", send_notification))
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
+    app.add_handler(CommandHandler("delete_category", delete_category_command))
 
     # -------- BUTTONS --------
     app.add_handler(CallbackQueryHandler(button_click))
