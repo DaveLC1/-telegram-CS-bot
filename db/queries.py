@@ -140,7 +140,21 @@ def get_note_by_id(note_id):
     data = cursor.fetchone()
     conn.close()
     return data
+    
 
+def delete_category(name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Delete notes in this category first
+    cursor.execute("DELETE FROM notes WHERE category=?", (name,))
+
+    # Delete category itself
+    cursor.execute("DELETE FROM categories WHERE name=?", (name,))
+
+    conn.commit()
+    conn.close()
+ 
 
 def delete_note(note_id):
     conn = get_connection()
