@@ -1,7 +1,8 @@
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
+import threading
+import os
 
 from db.queries import create_tables
-
 from handlers.start import start, courses_command
 from handlers.buttons import button_click
 from handlers.admin import (
@@ -12,15 +13,13 @@ from handlers.admin import (
     send_notification,
     reply_to_report,
     backup_db,
-    auto_backup
+    auto_backup,
+    restore_db_from_chat
 )
-
-from config import TOKEN
+from config import TOKEN, ADMIN_ID
 
 # -------- KEEP ALIVE SERVER --------
 from flask import Flask
-import threading
-import os
 
 web_app = Flask(__name__)
 
@@ -28,17 +27,23 @@ web_app = Flask(__name__)
 def home():
     return "Bot is alive"
 
-
 def run_web():
     port = int(os.environ.get("PORT", 10000))
-    web_app.run(host="0.0.0.0", port=port)
-
+    web_app.run(host="0.0.0.0", port=port, use_reloader=False)
 
 # -------- MAIN BOT --------
 def main():
-    create_tables()
-
+    create_tables()  # ensure DB exists if not restored
     app = Application.builder().token(TOKEN).build()
+
+    # Restore DB from pinned backup at startup
+    async def startup(app):
+        print("⏳ Restoring DB from pinned backup (if exists)...")
+        await restore_db_from_chat(app)
+        create_tables()
+        print("✅ Database ready")
+
+    app.post_init = startup
 
     # -------- COMMANDS --------
     app.add_handler(CommandHandler("start", start))
@@ -61,11 +66,10 @@ def main():
         app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
 
     # -------- START WEB SERVER THREAD --------
-    threading.Thread(target=run_web).start()
+    threading.Thread(target=run_web, daemon=True).start()
 
     print("Bot running...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()

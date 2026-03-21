@@ -21,7 +21,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif data == "feedback":
         context.user_data["state"] = "REPORT"
-        await query.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙧𝙚𝙥𝙤𝙧𝙩:")
+        await query.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙧𝙚𝙥𝙤𝙧𝙩𓅭:")
 
     # CATEGORY
     elif data.startswith("course_"):
@@ -31,14 +31,14 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if user_id == ADMIN_ID and context.user_data.get("state") == "WAITING_COURSE":
             context.user_data["category"] = category
             context.user_data["state"] = "WAITING_TITLE"
-            await query.edit_message_text(f"** {category}** selected.\nSend title:")
+            await query.edit_message_text(f" {category} selected.\nSend title:")
             return
 
         context.user_data["category"] = category
         notes = get_notes_by_category(category)
 
         await query.edit_message_text(
-            f"Notes for **{category}**:",
+            f"Notes for {category}:",
             reply_markup=get_notes_keyboard(notes, user_id)
         )
 
