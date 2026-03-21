@@ -7,8 +7,8 @@ from keyboards.courses import get_courses_keyboard
 
 from db.queries import (
     add_note, add_category, update_note,
-    get_all_users, add_report, get_report, close_report
-)
+    get_all_users, add_report, get_report, close_report, delete_category
+    )
 
 
 # -------- ADD COURSE --------
@@ -164,7 +164,19 @@ async def restore_db_from_chat(app):
         if os.path.exists(DB_PATH):
             os.remove(DB_PATH)
 
+# ---------------- DELETE CATEGORY ----------------
+async def delete_category_command(update, context):
+    if update.effective_user.id != ADMIN_ID:
+        return
 
+    if not context.args:
+        await update.message.reply_text("Usage: /delete_category <category_name>")
+        return
+
+    category_name = " ".join(context.args)
+    delete_category(category_name)
+    await update.message.reply_text(f"Category '{category_name}' deleted along with its notes.")
+    
 # -------- MESSAGE HANDLER --------
 async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
