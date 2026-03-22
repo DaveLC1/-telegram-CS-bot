@@ -19,3 +19,8 @@ async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "ད𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:ད",
         reply_markup=get_courses_keyboard()
     )
+
+
+async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["state"] = "REPORT"
+    await update.message.reply_text("Send your feedback or issue:")
