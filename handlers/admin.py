@@ -170,7 +170,7 @@ async def delete_category_command(update, context):
         return
 
     if not context.args:
-        await update.message.reply_text("Usage: /delete_category <category_name>")
+        await update.message.reply_text("Usage: /delete_course <category_name>")
         return
 
     category_name = " ".join(context.args)
