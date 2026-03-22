@@ -72,7 +72,7 @@ def main():
 
     # -------- AUTO BACKUP --------
     if app.job_queue:
-        app.job_queue.run_repeating(auto_backup, interval=7200, first=10)
+        app.job_queue.run_repeating(auto_backup, interval=43200, first=10)
 
     # -------- START WEB SERVER --------
     threading.Thread(target=run_web, daemon=True).start()
