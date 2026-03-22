@@ -51,7 +51,7 @@ async def send_notification(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "REPORT"
-    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙞𝙨𝙨𝙪𝙚:")
+    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙞𝙨𝙨𝙪𝙚 (𝚝𝚎𝚡𝚝 𝚘𝚗𝚕𝚢):")
     
 # -------- REPLY TO FEEDBACK --------
 async def reply_to_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -70,7 +70,7 @@ async def reply_to_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user_id, _ = report
-    await context.bot.send_message(user_id, f"Response𓅄:\n{reply_text}")
+    await context.bot.send_message(user_id, f"𝙍𝙚𝙨𝙥𝙤𝙣𝙨𝙚 𝙩𝙤 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙍𝙚𝙥𝙤𝙧𝙩𓅄:\n \n {reply_text}")
     close_report(report_id)
     await update.message.reply_text("𝙍𝙚𝙥𝙡𝙞𝙚𝙙")
 
