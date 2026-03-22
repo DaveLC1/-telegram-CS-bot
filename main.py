@@ -61,6 +61,7 @@ def main():
     app.add_handler(CommandHandler("reply", reply_to_report))
     app.add_handler(CommandHandler("backup", backup_db))
     app.add_handler(CommandHandler("delete_course", delete_category_command))
+    app.add_handler(CommandHandler("report", report_start))
 
     # -------- BUTTONS --------
     app.add_handler(CallbackQueryHandler(button_click))
