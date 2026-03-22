@@ -47,6 +47,12 @@ async def send_notification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "BROADCAST"
 
 
+#__________Report/ Feedback__________
+
+async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data["state"] = "REPORT"
+    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙞𝙨𝙨𝙪𝙚:")
+    
 # -------- REPLY TO FEEDBACK --------
 async def reply_to_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
