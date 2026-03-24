@@ -11,7 +11,7 @@ def main_menu():
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𓉳 𓀽", reply_markup=main_menu())
+    await update.message.reply_text("𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𓉳", reply_markup=main_menu())
 
 
 async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -23,4 +23,4 @@ async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "REPORT"
-    await update.message.reply_text("Send your feedback or issue:")
+    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙦𝙪𝙚𝙧𝙧𝙮 𓅭:")
