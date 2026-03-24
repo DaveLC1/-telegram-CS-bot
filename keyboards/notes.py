@@ -17,7 +17,7 @@ def get_notes_keyboard(notes, user_id):
         keyboard.append(row)
 
     keyboard.append([
-        InlineKeyboardButton("⬅ Back", callback_data="back_courses")
+        InlineKeyboardButton("⬅︎ Back", callback_data="back_courses")
     ])
 
     return InlineKeyboardMarkup(keyboard)
