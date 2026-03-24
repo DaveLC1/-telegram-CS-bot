@@ -17,11 +17,11 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # MENU
     if data == "show_courses":
-        await query.edit_message_text("Choose a category:", reply_markup=get_courses_keyboard())
+        await query.edit_message_text("𝙇𝙞𝙨𝙩 𝙤𝙛 𝘾𝙤𝙪𝙧𝙨𝙚𝙨:", reply_markup=get_courses_keyboard())
 
     elif data == "feedback":
         context.user_data["state"] = "REPORT"
-        await query.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙧𝙚𝙥𝙤𝙧𝙩𓅭:")
+        await query.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙧𝙚𝙥𝙤𝙧𝙩 𓅭:")
 
     # CATEGORY
     elif data.startswith("course_"):
