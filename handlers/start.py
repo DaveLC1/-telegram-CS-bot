@@ -23,4 +23,4 @@ async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "REPORT"
-    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙦𝙪𝙚𝙧𝙧𝙮 𓅭:")
+    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙦𝙪𝙚𝙧𝙧𝙮(𝚃𝚎𝚡𝚝 𝚘𝚗𝚕𝚢)𓅭:")
