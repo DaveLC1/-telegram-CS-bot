@@ -17,7 +17,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # MENU
     if data == "show_courses":
-        await query.edit_message_text("𝙇𝙞𝙨𝙩 𝙤𝙛 𝘾𝙤𝙪𝙧𝙨𝙚𝙨:", reply_markup=get_courses_keyboard())
+        await query.edit_message_text("ད𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:ད", reply_markup=get_courses_keyboard())
 
     elif data == "feedback":
         context.user_data["state"] = "REPORT"
@@ -78,4 +78,4 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # BACK
     elif data == "back_courses":
-        await query.edit_message_text("𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:", reply_markup=get_courses_keyboard())
+        await query.edit_message_text("ད𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:ད", reply_markup=get_courses_keyboard())
