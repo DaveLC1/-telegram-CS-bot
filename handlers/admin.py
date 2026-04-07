@@ -7,8 +7,9 @@ from keyboards.courses import get_courses_keyboard
 
 from db.queries import (
     add_note, add_category, update_note,
-    get_all_users, add_report, get_report, close_report, delete_category
-    )
+    get_all_users, add_report, get_report, close_report,
+    delete_category, add_user
+)
 
 
 # -------- ADD COURSE --------
@@ -47,12 +48,14 @@ async def send_notification(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "BROADCAST"
 
 
-#__________Report/ Feedback__________
-
+# -------- REPORT / FEEDBACK --------
 async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["state"] = "REPORT"
-    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙞𝙨𝙨𝙪𝙚(𝚝𝚎𝚡𝚝 𝚘𝚗𝚕𝚢) 𓅭:")
-    
+    await update.message.reply_text(
+        "𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙞𝙨𝙨𝙪𝙚 (text only) 𓅭:"
+    )
+
+
 # -------- REPLY TO FEEDBACK --------
 async def reply_to_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_ID:
@@ -70,7 +73,10 @@ async def reply_to_report(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user_id, _ = report
-    await context.bot.send_message(user_id, f"𝙍𝙚𝙨𝙥𝙤𝙣𝙨𝙚 𝙩𝙤 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙍𝙚𝙥𝙤𝙧𝙩𓅄:\n \n {reply_text}")
+    await context.bot.send_message(
+        user_id,
+        f"𝙍𝙚𝙨𝙥𝙤𝙣𝙨𝙚 𝙩𝙤 𝙮𝙤𝙪𝙧 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠/𝙍𝙚𝙥𝙤𝙧𝙩𓅄:\n\n{reply_text}"
+    )
     close_report(report_id)
     await update.message.reply_text("𝙍𝙚𝙥𝙡𝙞𝙚𝙙")
 
@@ -84,7 +90,6 @@ async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("DB not found")
         return
 
-    # Delete previous backup if exists
     last_msg_id = context.bot_data.get("last_backup_msg_id")
     if last_msg_id:
         try:
@@ -92,11 +97,11 @@ async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-    # Send new backup
     with open("bot.db", "rb") as f:
-        msg = await update.message.reply_document(document=f, filename="bot_backup.db")
+        msg = await update.message.reply_document(
+            document=f, filename="bot_backup.db"
+        )
 
-    # Pin it for future restore
     try:
         await msg.pin()
     except:
@@ -118,9 +123,12 @@ async def auto_backup(context: ContextTypes.DEFAULT_TYPE):
             pass
 
     with open("bot.db", "rb") as f:
-        msg = await context.bot.send_document(chat_id=ADMIN_ID, document=f, filename="bot_backup.db")
+        msg = await context.bot.send_document(
+            chat_id=ADMIN_ID,
+            document=f,
+            filename="bot_backup.db"
+        )
 
-    # Pin automatically
     try:
         await msg.pin()
     except:
@@ -129,12 +137,11 @@ async def auto_backup(context: ContextTypes.DEFAULT_TYPE):
     context.bot_data["last_backup_msg_id"] = msg.message_id
 
 
-# -------- RESTORE FROM PINNED BACKUP --------
+# -------- RESTORE DB --------
 async def restore_db_from_chat(app):
     DB_PATH = "bot.db"
     EXPECTED_FILENAME = "bot_backup.db"
 
-    # Treat empty or tiny DB as non-existent
     if os.path.exists(DB_PATH) and os.path.getsize(DB_PATH) > 1024:
         print("Local bot.db exists → skipping restore")
         return
@@ -148,47 +155,53 @@ async def restore_db_from_chat(app):
             return
 
         if pinned.document.file_name != EXPECTED_FILENAME:
-            print(f"Filename mismatch: expected {EXPECTED_FILENAME}, got {pinned.document.file_name}")
+            print("Wrong file name")
             return
 
-        print(f"Restoring DB from pinned: {pinned.document.file_name}")
+        print("Restoring DB...")
         file = await pinned.document.get_file()
         await file.download_to_drive(DB_PATH)
 
         import sqlite3
         conn = sqlite3.connect(DB_PATH)
-        conn.execute("SELECT 1 FROM sqlite_master")
+        conn.execute("SELECT 1")
         conn.close()
 
-        print("✅ Database restored and validated")
+        print("✅ DB restored")
 
-        # Track pinned message ID for future auto-backups
         app.bot_data["last_backup_msg_id"] = pinned.message_id
 
     except Exception as e:
-        print(f"Restore failed: {type(e).__name__}: {e}")
+        print(f"Restore failed: {e}")
         if os.path.exists(DB_PATH):
             os.remove(DB_PATH)
 
-# ---------------- DELETE CATEGORY ----------------
+
+# -------- DELETE CATEGORY --------
 async def delete_category_command(update, context):
     if update.effective_user.id != ADMIN_ID:
         return
 
     if not context.args:
-        await update.message.reply_text("Usage: /delete_course <category_name>")
+        await update.message.reply_text("Usage: /delete_course <category>")
         return
 
     category_name = " ".join(context.args)
     delete_category(category_name)
-    await update.message.reply_text(f"Category '{category_name}' deleted along with its notes.")
-    
+
+    await update.message.reply_text(f"Deleted '{category_name}'")
+
+
 # -------- MESSAGE HANDLER --------
 async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+
+    # ✅ CRITICAL FIX: SAVE EVERY USER
+    add_user(user_id)
+
     state = context.user_data.get("state")
 
-    # Feedback from anyone
+    # -------- REPORT --------
     if state == "REPORT":
         report_id = add_report(user_id, update.message.text)
         await context.bot.send_message(
@@ -202,13 +215,13 @@ async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id != ADMIN_ID:
         return
 
-    # Add category
+    # -------- ADD CATEGORY --------
     if state == "ADDING_CATEGORY":
         add_category(update.message.text.strip())
         await update.message.reply_text("Added", reply_markup=get_courses_keyboard())
         context.user_data.clear()
 
-    # Add note
+    # -------- ADD NOTE --------
     elif state == "WAITING_TITLE":
         context.user_data["title"] = update.message.text
         await update.message.reply_text("Send file")
@@ -219,11 +232,17 @@ async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TY
         if not doc:
             await update.message.reply_text("Send file ❌")
             return
-        add_note(context.user_data["category"], context.user_data["title"], doc.file_id)
+
+        add_note(
+            context.user_data["category"],
+            context.user_data["title"],
+            doc.file_id
+        )
+
         await update.message.reply_text("Saved")
         context.user_data.clear()
 
-    # Edit note
+    # -------- EDIT NOTE --------
     elif state == "EDIT_TITLE":
         context.user_data["new_title"] = update.message.text
         await update.message.reply_text("Send new file")
@@ -234,22 +253,52 @@ async def handle_admin_messages(update: Update, context: ContextTypes.DEFAULT_TY
         if not doc:
             await update.message.reply_text("Send file ❌")
             return
-        update_note(context.user_data["edit_note_id"], context.user_data["new_title"], doc.file_id)
+
+        update_note(
+            context.user_data["edit_note_id"],
+            context.user_data["new_title"],
+            doc.file_id
+        )
+
         await update.message.reply_text("Updated")
         context.user_data.clear()
 
-    # Broadcast
+    # -------- BROADCAST (FIXED) --------
     elif state == "BROADCAST":
         users = get_all_users()
+
+        success = 0
+        failed = 0
+
         for u in users:
             try:
                 if update.message.text:
                     await context.bot.send_message(u, update.message.text)
+
                 elif update.message.photo:
-                    await context.bot.send_photo(u, update.message.photo[-1].file_id)
+                    await context.bot.send_photo(
+                        u,
+                        update.message.photo[-1].file_id,
+                        caption=update.message.caption
+                    )
+
                 elif update.message.document:
-                    await context.bot.send_document(u, update.message.document.file_id)
+                    await context.bot.send_document(
+                        u,
+                        update.message.document.file_id,
+                        caption=update.message.caption
+                    )
+
+                success += 1
+
             except:
-                pass
-        await update.message.reply_text("𝘽𝙧𝙤𝙖𝙙𝙘𝙖𝙨𝙩 𝙨𝙚𝙣𝙩 𓅃")
+                failed += 1
+
+        await update.message.reply_text(
+            f"📢 Broadcast Complete\n\n"
+            f"✅ Sent: {success}\n"
+            f"❌ Failed: {failed}\n"
+            f"👥 Total Users: {len(users)}"
+        )
+
         context.user_data.clear()
