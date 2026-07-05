@@ -46,7 +46,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"Welcome back!\n🎓 Current Level: {level} Level",
+        text=f"𝗪𝗲𝗹𝗰𝗼𝗺𝗲 𝗯𝗮𝗰𝗸! \n🎓 𝙲𝚞𝚛𝚛𝚎𝚗𝚝 𝙻𝚎𝚟𝚎𝚕: {level} Level",
         reply_markup=main_menu(),
         message_effect_id=MESSAGE_EFFECT_ID
     )
@@ -61,7 +61,7 @@ async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await clear_old_menu(update, context)
 
     msg = await update.message.reply_text(
-        "༼📚 𝙲𝚘𝚞𝚛𝚜𝚎 𝙼𝚎𝚗𝚞 𝚘𝚙𝚝𝚒𝚘𝚗𝚜༽",
+        "📚༼𝙲𝚘𝚞𝚛𝚜𝚎 𝙼𝚎𝚗𝚞 𝚘𝚙𝚝𝚒𝚘𝚗𝚜༽",
         reply_markup=main_menu()
     )
 
