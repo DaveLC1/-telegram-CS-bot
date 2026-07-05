@@ -6,7 +6,7 @@ from config import TOKEN
 
 # --- IMPORT SECURE ALIGNED PIPELINE MODULES ---
 from handlers.start import start, courses_command
-from handlers.buttons import button_click, handle_note_retrieval
+from handlers.buttons import button_click, handle_note_retrieval, report_command
 from handlers.admin import (
     semester_command, 
     stats_command,
@@ -53,6 +53,7 @@ def main():
     app.add_handler(CommandHandler("notify", broadcast_command))
     app.add_handler(CommandHandler("cancel", cancel))
     app.add_handler(CommandHandler("admin", admin_panel_command))
+    app.add_handler(CommandHandler("report", report_command))
     
     # Catch dynamic text commands like /get_5 (for search results)
     app.add_handler(MessageHandler(filters.Regex(r"^/get_\d+$"), handle_note_retrieval))
