@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import sqlite3
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import ADMIN_ID
@@ -24,33 +25,117 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()
     await update.message.reply_text("𝙰𝚌𝚝𝚒𝚟𝚎 𝚘𝚙𝚎𝚛𝚊𝚝𝚒𝚘𝚗 𝙲𝚊𝚗𝚌𝚎𝚕𝚕𝚎𝚍.")
 
-# --- PRESERVED SECURE CODES FOR BACKUP SYSTEM PIPELINES (UNTOUCHED) ---
+
+# 💾 ROBUST INTERACTIVE & AUTOMATED BACKUP ENGINE 
+
+# -------- MANUAL BACKUP --------
 async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
-    db_path = "bot.db"
-    if os.path.exists(db_path):
-        await update.message.reply_document(
-            document=open(db_path, "rb"), 
-            caption=f"💾 Encrypted Snapshot Backup DB: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-        )
-    else:
-        await update.message.reply_text("❌ Target DB not found inside runtime container array paths.")
+    # Safe check even if triggered from weird context update vectors
+    user_id = update.effective_user.id if update.effective_user else ADMIN_ID
+    if str(user_id) != str(ADMIN_ID):
+        return
 
+    if not os.path.exists("bot.db"):
+        msg_obj = update.message if update.message else (update.callback_query.message if update.callback_query else None)
+        if msg_obj:
+            await msg_obj.reply_text("DB not found")
+        return
+
+    # Delete previous backup if exists
+    last_msg_id = context.bot_data.get("last_backup_msg_id")
+    if last_msg_id:
+        try:
+            await context.bot.delete_message(chat_id=ADMIN_ID, message_id=last_msg_id)
+        except:
+            pass
+
+    # Send new backup safely to the admin chat channel directly
+    with open("bot.db", "rb") as f:
+        msg = await context.bot.send_document(chat_id=ADMIN_ID, document=f, filename="bot_backup.db")
+
+    # CORRECT PIN MECHANISM: Force API pin call
+    try:
+        await context.bot.pin_chat_message(chat_id=ADMIN_ID, message_id=msg.message_id, disable_notification=True)
+    except Exception as e:
+        print(f"Pin failed: {e}")
+
+    context.bot_data["last_backup_msg_id"] = msg.message_id
+
+
+# -------- AUTO BACKUP --------
+async def auto_backup(context: ContextTypes.DEFAULT_TYPE):
+    if not os.path.exists("bot.db"):
+        return
+
+    last_msg_id = context.bot_data.get("last_backup_msg_id")
+    if last_msg_id:
+        try:
+            await context.bot.delete_message(chat_id=ADMIN_ID, message_id=last_msg_id)
+        except:
+            pass
+
+    with open("bot.db", "rb") as f:
+        msg = await context.bot.send_document(chat_id=ADMIN_ID, document=f, filename="bot_backup.db")
+
+    # CORRECT PIN MECHANISM: Force API pin call
+    try:
+        await context.bot.pin_chat_message(chat_id=ADMIN_ID, message_id=msg.message_id, disable_notification=True)
+    except Exception as e:
+        print(f"Pin failed: {e}")
+
+    context.bot_data["last_backup_msg_id"] = msg.message_id
+
+
+# -------- RESTORE FROM PINNED BACKUP --------
 async def restore_db_from_chat(app):
-    # Leaves your exact startup recovery logic running completely native
-    print("🔄 Running validation structures on underlying backup references...")
+    DB_PATH = "bot.db"
+    EXPECTED_FILENAME = "bot_backup.db"
+
+    if os.path.exists(DB_PATH) and os.path.getsize(DB_PATH) > 1024:
+        print("Local bot.db exists → skipping restore")
+        return
+
+    try:
+        chat = await app.bot.get_chat(ADMIN_ID)
+        pinned = chat.pinned_message
+
+        if not pinned or not pinned.document:
+            print("No pinned backup found")
+            return
+
+        if pinned.document.file_name != EXPECTED_FILENAME:
+            print(f"Filename mismatch: expected {EXPECTED_FILENAME}, got {pinned.document.file_name}")
+            return
+
+        print(f"Restoring DB from pinned: {pinned.document.file_name}")
+        file = await pinned.document.get_file()
+        await file.download_to_drive(DB_PATH)
+
+        import sqlite3
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("SELECT 1 FROM sqlite_master")
+        conn.close()
+
+        print("✅ Database restored and validated")
+        app.bot_data["last_backup_msg_id"] = pinned.message_id
+
+    except Exception as e:
+        print(f"Restore failed: {type(e).__name__}: {e}")
+        if os.path.exists(DB_PATH):
+            os.remove(DB_PATH)
+ 
+ 
+# 🛠️ ADMINISTRATIVE UI WORKFLOW AND MATRIX COMMANDS
 
 
-# --- DYNAMIC HUB NAVIGATION CONSOLE COMMAND ---
 async def admin_panel_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     await update.message.reply_text(
-        "🛠️ **𝙰𝚌𝚊𝚍𝚎𝚖𝚒𝚌 𝚋𝚘𝚝 𝙼𝚊𝚗𝚊𝚐𝚎𝚖𝚎𝚗𝚝 𝙲𝚘𝚗𝚜𝚘𝚕𝚎 𝙴𝚗𝚐𝚒𝚗𝚎**\n𝚂𝚎𝚕𝚎𝚌𝚝 𝚊𝚗 𝙴𝚗𝚝𝚛𝚢:",
+        "🛠️ **𝙰𝚌𝚊𝚍𝚎𝚖𝚒𝚌 𝚋𝚘𝚝 𝙼𝚊𝚗𝚊げて𝚖𝚎𝚗𝚝 𝙲𝚘𝚗𝚜𝚘𝚕𝚎 𝙴𝚗𝚐𝚒𝚗𝚎**\n𝚂𝚎𝚕𝚎𝚌𝚝 𝚊𝚗 𝙴𝚗𝚝𝚛𝚢:",
         reply_markup=admin_main_hub_keyboard(),
         parse_mode="Markdown"
     )
 
-# --- DYNAMIC INLINE CALLBACK DISPATCH ROUTER ---
 async def handle_admin_dynamic_callbacks(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     if not is_admin(update.effective_user.id):
@@ -145,8 +230,9 @@ async def handle_admin_dynamic_callbacks(update: Update, context: ContextTypes.D
         context.user_data["adm_state"] = f"REP_TICKET_{target_uid}"
         await query.edit_message_text(f"✉️ Type response text below to dispatch to user key `{target_uid}` directly:")
 
-
-# --- PRESERVED ORIGINAL ADMINISTRATIVE CORE LOGICS ---
+# ==========================================================
+# 📊 UTILITY STATISTICS AND LIVE CHAT BROADCASTS
+# ==========================================================
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -199,16 +285,15 @@ async def level_reset_command(update: Update, context: ContextTypes.DEFAULT_TYPE
     clear_all_levels()
     await update.message.reply_text("🧹 Database structural user tier registration contexts wiped cleanly.")
 
+# ==========================================================
+# ⚙️ SYSTEM STATE MACHINE PIPELINES (MESSAGE CONTEXT SEPARATION)
+# ==========================================================
 
-# --- GLOBAL COMBINED MESSAGES & STATES MACHINE RECEPTOR ---
 async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     state = context.user_data.get("state")
     adm_state = context.user_data.get("adm_state")
 
-    # ==========================================================
-    # 🚨 ADMINISTRATIVE INTERCEPTOR MACHINE STATES
-    # ==========================================================
     if is_admin(user_id) and adm_state:
         if adm_state == "WAITING_CNAME" and update.message.text:
             c_name = update.message.text.strip().upper()
@@ -279,9 +364,6 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
             context.user_data.clear()
             return
 
-    # ==========================================================
-    # PRESERVED STANDARD CORE ADMINISTRATIVE BROADCASTS
-    # ==========================================================
     if is_admin(user_id) and state == "AWAITING_BROADCAST_PAYLOAD":
         target = context.user_data.get("broadcast_target")
         recipients = get_all_users() if target == "all" else get_users_by_level(target)
@@ -297,9 +379,6 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(f"📊 Broadcast execution processing complete. Pushed updates to {sent_count} endpoints.")
         return
 
-    # ==========================================================
-    # 👤 DYNAMIC USER PROMPTS INTERCEPTORS (SEARCH & REPORTS SYSTEM)
-    # ==========================================================
     if state == "SEARCH_PROMPT" and update.message.text:
         keyword = update.message.text.strip()
         results = search_notes_global(keyword)
