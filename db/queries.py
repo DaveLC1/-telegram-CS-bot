@@ -1,6 +1,22 @@
 from db.database import get_connection
 from datetime import datetime
 
+# --- FONTS NORMALIZATION TRANSLATOR ---
+def normalize_text(text: str) -> str:
+    """Converts mathematical alphanumeric styled fonts back into standard plain text."""
+    if not text:
+        return ""
+    
+    # Map for Monospace (𝚃𝚑𝚒𝚜) and Sans-Serif Bold (𝘁𝗵𝗶𝘀) + standard blocks
+    font_map = str.maketrans(
+        # Styled Capitals
+        "𝙰𝙱𝙲𝙳𝙴𝙵𝙶𝙷𝙸𝙹𝙺𝙻𝙼𝙽𝙾𝙿𝚀𝚁𝚂𝚃𝚄𝚅𝚆𝚇𝚈𝚉𝗔𝗕𝗖𝗗Ｅ𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠加𝗡𝗢𝗣𝗤𝗦𝗧𝗨做𝗩𝗪𝗫𝗬𝗭",
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        # Styled Lowercase
+        "𝚊𝚋𝚌𝚍𝚎𝚏𝚐𝚑𝚒𝚓𝚔𝚕𝚖𝚗𝚘𝚙𝚚𝚛𝚜𝚝𝚞𝚟𝚠𝚡𝚢𝚣𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇"
+    )
+    return text.translate(font_map)
+
 # --- SETTINGS ---
 def get_current_semester():
     conn = get_connection()
@@ -155,16 +171,31 @@ def get_note_by_id(note_id):
     return row
 
 def search_notes_global(keyword):
+    # Convert whatever the user searched for into flat lowercase text
+    clean_keyword = normalize_text(keyword).strip().lower()
+    
     conn = get_connection()
     cur = conn.cursor()
+    
+    # Grab all data nodes from tables to execute clean matches in python runtime memory
     cur.execute("""
-        SELECT n.id, n.title, c.course_name FROM notes n
+        SELECT n.id, n.title, c.course_name 
+        FROM notes n
         JOIN courses c ON n.course_id = c.id
-        WHERE n.title LIKE ? OR c.course_name LIKE ?
-    """, (f"%{keyword}%", f"%{keyword}%"))
-    rows = cur.fetchall()
+    """)
+    all_rows = cur.fetchall()
     conn.close()
-    return rows
+    
+    matched_rows = []
+    for row in all_rows:
+        # Normalize row strings dynamically right before comparing strings
+        norm_title = normalize_text(row["title"]).lower()
+        norm_course = normalize_text(row["course_name"]).lower()
+        
+        if clean_keyword in norm_title or clean_keyword in norm_course:
+            matched_rows.append(row)
+            
+    return matched_rows
 
 # --- STATISTICS ---
 def get_global_stats():
@@ -187,59 +218,37 @@ def add_log(action):
     conn.commit()
     conn.close()
 
-
-# ADMIN HELPERS
-
-
+# --- ADMIN HELPERS ---
 def get_courses_admin(level, semester):
     conn = get_connection()
     cur = conn.cursor()
-
     cur.execute("""
         SELECT id, course_name
         FROM courses
         WHERE level=? AND semester=?
         ORDER BY course_name
     """, (str(level), int(semester)))
-
     rows = cur.fetchall()
     conn.close()
     return rows
-
 
 def get_all_notes():
     conn = get_connection()
     cur = conn.cursor()
-
     cur.execute("""
-        SELECT
-            n.id,
-            n.title,
-            c.course_name,
-            c.level,
-            c.semester
+        SELECT n.id, n.title, c.course_name, c.level, c.semester
         FROM notes n
-        JOIN courses c
-            ON n.course_id=c.id
-        ORDER BY
-            c.level,
-            c.semester,
-            c.course_name
+        JOIN courses c ON n.course_id=c.id
+        ORDER BY c.level, c.semester, c.course_name
     """)
-
     rows = cur.fetchall()
     conn.close()
     return rows
 
-
 def delete_note(note_id):
     conn = get_connection()
     cur = conn.cursor()
-
-    cur.execute(
-        "DELETE FROM notes WHERE id=?",
-        (note_id,)
-    )
-
+    cur.execute("DELETE FROM notes WHERE id=?", (note_id,))
     conn.commit()
     conn.close()
+    
