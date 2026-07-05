@@ -23,7 +23,7 @@ def is_admin(user_id):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     context.user_data.clear()
-    await update.message.reply_text("𝙰放𝚝𝚒𝚟𝚎 𝚘𝚙𝚎𝚛𝚊𝚝𝚒𝚘𝚗 𝙲𝚊𝚗𝚌𝚎𝚕𝚕𝚎𝚍.")
+    await update.message.reply_text("Active operation Cancelled.")
 
 
 # 💾 ROBUST INTERACTIVE & AUTOMATED BACKUP ENGINE 
@@ -223,7 +223,7 @@ async def handle_admin_dynamic_callbacks(update: Update, context: ContextTypes.D
     elif data.startswith("adm_reply_tk_"):
         target_uid = int(data.split("_")[3])
         context.user_data["adm_state"] = f"REP_TICKET_{target_uid}"
-        await query.edit_message_text(f"✉️ Type response text below to dispatch to user key `{target_uid}` directly:")
+        await query.edit_message_text(f"✉️ Type response (text or media asset payload) below to dispatch to user key `{target_uid}` directly:")
 
 # ==========================================================
 # 📊 UTILITY STATISTICS AND LIVE CHAT BROADCASTS
@@ -290,7 +290,24 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
     adm_state = context.user_data.get("adm_state")
 
     if is_admin(user_id) and adm_state:
-        if adm_state == "WAITING_CNAME" and update.message.text:
+        if adm_state.startswith("REP_TICKET_"):
+            target_uid = int(adm_state.split("_")[2])
+            try:
+                # 1. Dispatch an alert header notice down to user pipeline
+                await context.bot.send_message(
+                    chat_id=target_uid,
+                    text="✉️ **Support Feedback System Response Alert**:",
+                    parse_mode="Markdown"
+                )
+                # 2. Duplicate raw administrative message structure directly (handles text, photos, files, voice notes, stickers)
+                await update.message.copy(chat_id=target_uid)
+                await update.message.reply_text(f"🚀 Response payload safely processed and relayed to user: `{target_uid}`.")
+            except Exception as error:
+                await update.message.reply_text(f"❌ Failed to reach recipient context cluster node endpoint structure: {error}")
+            context.user_data.clear()
+            return
+
+        elif adm_state == "WAITING_CNAME" and update.message.text:
             c_name = update.message.text.strip().upper()
             level = context.user_data.get("t_level")
             semester = context.user_data.get("t_sem")
@@ -342,21 +359,6 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
             conn.close()
             context.user_data.clear()
             await update.message.reply_text("✅ Target runtime document file reference swapped successfully.")
-            return
-
-        elif adm_state.startswith("REP_TICKET_"):
-            target_uid = int(adm_state.split("_")[2])
-            reply_text = update.message.text
-            try:
-                await context.bot.send_message(
-                    chat_id=target_uid,
-                    text=f"✉️ **Support Feedback System Response Alert**:\n\n{reply_text}",
-                    parse_mode="Markdown"
-                )
-                await update.message.reply_text(f"🚀 Response safely processed and relayed to user: `{target_uid}`.")
-            except Exception as error:
-                await update.message.reply_text(f"❌ Failed to reach recipient context cluster node endpoint structure: {error}")
-            context.user_data.clear()
             return
 
     if is_admin(user_id) and state == "AWAITING_BROADCAST_PAYLOAD":
@@ -434,4 +436,4 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
             
         context.user_data.clear()
         return
-            
+              
