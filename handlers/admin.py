@@ -23,14 +23,13 @@ def is_admin(user_id):
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     context.user_data.clear()
-    await update.message.reply_text("𝙰𝚌𝚝𝚒𝚟𝚎 𝚘𝚙𝚎𝚛𝚊𝚝𝚒𝚘𝚗 𝙲𝚊𝚗𝚌𝚎𝚕𝚕𝚎𝚍.")
+    await update.message.reply_text("𝙰放𝚝𝚒𝚟𝚎 𝚘𝚙𝚎𝚛𝚊𝚝𝚒𝚘𝚗 𝙲𝚊𝚗𝚌𝚎𝚕𝚕𝚎𝚍.")
 
 
 # 💾 ROBUST INTERACTIVE & AUTOMATED BACKUP ENGINE 
 
 # -------- MANUAL BACKUP --------
 async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Safe check even if triggered from weird context update vectors
     user_id = update.effective_user.id if update.effective_user else ADMIN_ID
     if str(user_id) != str(ADMIN_ID):
         return
@@ -41,7 +40,6 @@ async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await msg_obj.reply_text("DB not found")
         return
 
-    # Delete previous backup if exists
     last_msg_id = context.bot_data.get("last_backup_msg_id")
     if last_msg_id:
         try:
@@ -49,11 +47,9 @@ async def backup_db(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except:
             pass
 
-    # Send new backup safely to the admin chat channel directly
     with open("bot.db", "rb") as f:
         msg = await context.bot.send_document(chat_id=ADMIN_ID, document=f, filename="bot_backup.db")
 
-    # CORRECT PIN MECHANISM: Force API pin call
     try:
         await context.bot.pin_chat_message(chat_id=ADMIN_ID, message_id=msg.message_id, disable_notification=True)
     except Exception as e:
@@ -77,7 +73,6 @@ async def auto_backup(context: ContextTypes.DEFAULT_TYPE):
     with open("bot.db", "rb") as f:
         msg = await context.bot.send_document(chat_id=ADMIN_ID, document=f, filename="bot_backup.db")
 
-    # CORRECT PIN MECHANISM: Force API pin call
     try:
         await context.bot.pin_chat_message(chat_id=ADMIN_ID, message_id=msg.message_id, disable_notification=True)
     except Exception as e:
@@ -394,31 +389,49 @@ async def handle_global_messages(update: Update, context: ContextTypes.DEFAULT_T
         await update.message.reply_text(text, parse_mode="Markdown")
         return
 
-    elif state == "FEEDBACK_PROMPT" and update.message.text:
-        fb_text = update.message.text
+    # UNIVERSAL MULTI-MEDIA REPORT ENGINE
+    elif state == "FEEDBACK_PROMPT":
         uname = update.effective_user.username or "Anonymous Context Block"
         
+        # 1. Inspect message blocks dynamically to catch all raw media formats
+        media_type = "TEXT"
+        if update.message.document: media_type = "DOCUMENT"
+        elif update.message.photo: media_type = "PHOTO"
+        elif update.message.sticker: media_type = "STICKER"
+        elif update.message.voice or update.message.audio: media_type = "AUDIO"
+        elif update.message.video or update.message.video_note: media_type = "VIDEO"
+
+        # 2. Add structural tracking indexes to the sqlite catalog database
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("INSERT INTO reports(user_id, message_type, message_id) VALUES(?, 'TEXT', ?)", (user_id, update.message.message_id))
+        cur.execute(
+            "INSERT INTO reports(user_id, message_type, message_id) VALUES(?, ?, ?)", 
+            (user_id, media_type, update.message.message_id)
+        )
         report_ticket_id = cur.lastrowid
         conn.commit()
         conn.close()
         
+        # 3. Create active callback links so the operator can reply directly
         reply_kb = InlineKeyboardMarkup([
             [InlineKeyboardButton(f"✍️ Reply Ticket #{report_ticket_id}", callback_data=f"adm_reply_tk_{user_id}")]
         ])
         
         try:
+            # Send notification header details packet first
             await context.bot.send_message(
                 chat_id=ADMIN_ID,
-                text=f"📥 **System Support Queue Event Ticket #{report_ticket_id}**\n👤 Identity Node: @{uname} (`{user_id}`)\n\n💬 Content string:\n\"{fb_text}\"",
-                reply_markup=reply_kb,
+                text=f"📥 **System Support Queue Event Ticket #{report_ticket_id}**\n👤 Identity Node: @{uname} (`{user_id}`)\n📦 Content Type: {media_type}",
                 parse_mode="Markdown"
             )
-            await update.message.reply_text("✅ Input logs dispatched to support queue. Operators have been appended.")
-        except Exception:
+            
+            # Copy the raw content array seamlessly down to the operator's interface matrix
+            await update.message.copy(chat_id=ADMIN_ID, reply_markup=reply_kb)
+            await update.message.reply_text("✅ Your support request packet has been securely logged and dispatched to developers.")
+        except Exception as e:
+            print(f"Error copying package data over to developer console channel: {e}")
             await update.message.reply_text("✅ Core processing complete: Logged natively inside database schemas.")
             
         context.user_data.clear()
         return
+            
