@@ -56,7 +56,7 @@ def admin_level_select_keyboard(action_prefix: str):
         [InlineKeyboardButton("🎓 200 Level", callback_data=f"{action_prefix}_200")],
         [InlineKeyboardButton("🎓 300 Level", callback_data=f"{action_prefix}_300")],
         [InlineKeyboardButton("🎓 400 Level", callback_data=f"{action_prefix}_400")],
-        [InlineKeyboardButton("⬅️ Admin Menu", callback_data="adm_main_back")]
+        [InlineKeyboardButton("⇦ Admin Menu", callback_data="adm_main_back")]
     ])
 
 def admin_semester_select_keyboard(action_prefix: str, level: str):
@@ -76,7 +76,7 @@ def admin_course_action_keyboard(level: str, semester: str, courses_list):
     keyboard.extend([
         [InlineKeyboardButton("➕ Add Course Here", callback_data=f"adm_addc_{level}_{semester}")],
         [InlineKeyboardButton("➕ Upload Note Here", callback_data=f"adm_addn_{level}_{semester}")],
-        [InlineKeyboardButton("⬅️ Back to Semesters", callback_data=f"admnav_{level}")]
+        [InlineKeyboardButton("⇦ Back to Semesters", callback_data=f"admnav_{level}")]
     ])
     return InlineKeyboardMarkup(keyboard)
 
@@ -91,5 +91,5 @@ def admin_notes_management_keyboard(course_id: int, notes_list):
             InlineKeyboardButton("🔄 File", callback_data=f"adm_enfile_{n_id}"),
             InlineKeyboardButton("🗑️", callback_data=f"adm_deln_{n_id}_{course_id}")
         ])
-    keyboard.append([InlineKeyboardButton("⬅️ Back to Hub", callback_data="adm_manage_hub")])
+    keyboard.append([InlineKeyboardButton("⇦ Back to Hub", callback_data="adm_manage_hub")])
     return InlineKeyboardMarkup(keyboard)
