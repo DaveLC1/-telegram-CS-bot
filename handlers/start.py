@@ -61,7 +61,7 @@ async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await clear_old_menu(update, context)
 
     msg = await update.message.reply_text(
-        "📚 Application Menu Options:",
+        "༼📚 𝙲𝚘𝚞𝚛𝚜𝚎 𝙼𝚎𝚗𝚞 𝚘𝚙𝚝𝚒𝚘𝚗𝚜༽",
         reply_markup=main_menu()
     )
 
