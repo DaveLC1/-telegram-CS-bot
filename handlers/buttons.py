@@ -110,3 +110,10 @@ async def handle_note_retrieval(update: Update, context: ContextTypes.DEFAULT_TY
         document=note["file_id"], 
         caption=f"📄 Document Reference: {note['title']}"
     )
+
+# -------- TEXTUAL COMMAND ROUTE FOR REPORTS --------
+async def report_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Triggered via /report command text input"""
+    context.user_data["state"] = "FEEDBACK_PROMPT"
+    await update.message.reply_text("💬 Send your textual report, suggestion, or query directly below:")
+    
