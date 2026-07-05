@@ -1,28 +1,68 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
-from keyboards.courses import get_courses_keyboard
-from db.queries import add_user
+from db.queries import add_user, get_user_level
+from keyboards.levels import get_levels_keyboard
 
+# Telegram Confetti/Celebration Effect
+MESSAGE_EFFECT_ID = "5104841245755180586"
 
 def main_menu():
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton("📚𝙇𝙞𝙨𝙩 𝙤𝙛 𝘾𝙤𝙪𝙧𝙨𝙚𝙨", callback_data="show_courses")],
-        [InlineKeyboardButton("💬 𝙁𝙚𝙚𝙙𝙗𝙖𝙘𝙠", callback_data="feedback")]
+        [InlineKeyboardButton("📚 My Courses", callback_data="my_courses")],
+        [InlineKeyboardButton("🔍 Search Notes", callback_data="search_notes")],
+        [InlineKeyboardButton("💬 Feedback", callback_data="feedback")]
     ])
 
+async def clear_old_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Helper function to delete the previously tracked menu message."""
+    old_menu_id = context.user_data.get("last_menu_id")
+    if old_menu_id:
+        try:
+            await context.bot.delete_message(
+                chat_id=update.effective_chat.id,
+                message_id=old_menu_id
+            )
+        except Exception:
+            pass
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    add_user(update.effective_user.id)  # ✅ SAVE USER
-    await update.message.reply_text("𝙒𝙚𝙡𝙘𝙤𝙢𝙚 𓉳", reply_markup=main_menu())
+    user = update.effective_user
+    add_user(user.id, user.username, user.first_name)
 
+    # Delete any lingering keyboard menu before printing the new start window
+    await clear_old_menu(update, context)
+
+    level = get_user_level(user.id)
+
+    if level is None:
+        msg = await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text="👋 𝚆𝚎𝚕𝚌𝚘𝚖𝚎! 𝚜𝚎𝚕𝚎𝚌𝚝 𝚢𝚘𝚞𝚛 𝙰𝚌𝚊𝚍𝚎𝚖𝚒𝚌 𝙻𝚎𝚟𝚎𝚕 𝚋𝚎𝚕𝚘𝚠 𝚝𝚘 𝚌𝚘𝚗𝚝𝚒𝚗𝚞𝚎:",
+            reply_markup=get_levels_keyboard(),
+            message_effect_id=MESSAGE_EFFECT_ID
+        )
+        context.user_data["last_menu_id"] = msg.message_id
+        return
+
+    msg = await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=f"Welcome back!\n🎓 Current Level: {level} Level",
+        reply_markup=main_menu(),
+        message_effect_id=MESSAGE_EFFECT_ID
+    )
+    context.user_data["last_menu_id"] = msg.message_id
 
 async def courses_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    add_user(update.effective_user.id)  # ✅ SAVE USER
-    await update.message.reply_text(
-        "ད𝙎𝙚𝙡𝙚𝙘𝙩 𝙖 𝙘𝙤𝙪𝙧𝙨𝙚:ད",
-        reply_markup=get_courses_keyboard()
+    level = get_user_level(update.effective_user.id)
+    if level is None:
+        await update.message.reply_text("Please set your level using /start first.")
+        return
+
+    await clear_old_menu(update, context)
+
+    msg = await update.message.reply_text(
+        "📚 Application Menu Options:",
+        reply_markup=main_menu()
     )
 
-async def report_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["state"] = "REPORT"
-    await update.message.reply_text("𝙎𝙚𝙣𝙙 𝙮𝙤𝙪𝙧 𝙛𝙚𝙚𝙙𝙗𝙖𝙘𝙠 𝙤𝙧 𝙦𝙪𝙚𝙧𝙧𝙮(𝚃𝚎𝚡𝚝 𝚘𝚗𝚕𝚢)𓅭:")
+    context.user_data["last_menu_id"] = msg.message_id
