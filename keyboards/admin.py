@@ -64,7 +64,7 @@ def admin_semester_select_keyboard(action_prefix: str, level: str):
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("📘 First Semester", callback_data=f"{action_prefix}_{level}_1")],
         [InlineKeyboardButton("📙 Second Semester", callback_data=f"{action_prefix}_{level}_2")],
-        [InlineKeyboardButton("⬅️ Back to Levels", callback_data="adm_manage_hub")]
+        [InlineKeyboardButton("⇦ Back to Levels", callback_data="adm_manage_hub")]
     ])
 
 def admin_course_action_keyboard(level: str, semester: str, courses_list):
@@ -88,7 +88,7 @@ def admin_notes_management_keyboard(course_id: int, notes_list):
         title = note[1] if isinstance(note, tuple) else note["title"]
         keyboard.append([
             InlineKeyboardButton(f"📝 Title: {title[:12]}...", callback_data=f"adm_entit_{n_id}"),
-            InlineKeyboardButton("🔄 File", callback_data=f"adm_enfile_{n_id}"),
+            InlineKeyboardButton("↻ File", callback_data=f"adm_enfile_{n_id}"),
             InlineKeyboardButton("🗑️", callback_data=f"adm_deln_{n_id}_{course_id}")
         ])
     keyboard.append([InlineKeyboardButton("⇦ Back to Hub", callback_data="adm_manage_hub")])
