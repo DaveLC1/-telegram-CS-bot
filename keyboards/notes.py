@@ -15,5 +15,5 @@ def get_notes_keyboard(notes, user_id):
         else:
             keyboard.append([InlineKeyboardButton(f"📄 {title}", callback_data=f"note_{note_id}")])
             
-    keyboard.append([InlineKeyboardButton("⬅︎ Back to Courses", callback_data="my_courses")])
+    keyboard.append([InlineKeyboardButton("⇦ Back to Courses", callback_data="my_courses")])
     return InlineKeyboardMarkup(keyboard)
