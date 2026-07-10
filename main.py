@@ -69,7 +69,7 @@ def main():
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_global_messages))
     
     if app.job_queue:
-        app.job_queue.run_repeating(auto_backup, interval=86400, first=10)
+        app.job_queue.run_repeating(auto_backup, interval=1209600, first=10)
 
     # RUN KEEPALIVE ENGINE
     threading.Thread(target=run_web, daemon=True).start()
